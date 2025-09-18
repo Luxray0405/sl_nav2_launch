@@ -1,6 +1,6 @@
 # sl_nav2_launch
 
-salamander用nav2起動パッケージ
+salamander用nav2起動パッケージ  
 バイナリ/ソースインストールされたnav2を起動するためのもの。
 
 
@@ -27,9 +27,9 @@ map_server:
 ## ディレクトリ構成
 
 ### launch
-起動するlaunchファイル。
-sl_nav2_launchではnav2のナビゲーション機能一連を起動。
-waypoint_saver_launchはrviz上でwaypointを指定・保存するノードを起動。
+起動するlaunchファイル。  
+sl_nav2_launchではnav2のナビゲーション機能一連を起動。  
+waypoint_saver_launchはrviz上でwaypointを指定・保存するノードを起動。  
 saved_wp_follower_launchは保存したwaypointファイルからnav2にゴール情報を送るノードを起動。
 
 
@@ -46,7 +46,7 @@ saved_wp_follower_launchは保存したwaypointファイルからnav2にゴー�
 rvizファイル。
 
 ### src
-waypoint_saver.cpp：waypoint作成・保存ノード。
+waypoint_saver.cpp：waypoint作成・保存ノード。  
 saved_wp_follower.cpp：waypoint送信ノード。
 
 
