@@ -1,0 +1,14 @@
+# ビルド関連のファイル
+build/
+install/
+log/
+
+# Python関連のキャッシュ
+__pycache__/
+*.pyc
+
+# IDEやエディタの設定ファイル
+.vscode/
+*.swp
+*.swo
+

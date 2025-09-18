@@ -1,0 +1,7 @@
+image: uec_250819.pgm
+mode: trinary
+resolution: 0.0833
+origin: [-60.0000, -60.0000, 0.0]
+negate: 0
+occupied_thresh: 0.65
+free_thresh: 0.20
