@@ -7,7 +7,7 @@ salamander用nav2起動パッケージ
 rvizの起動+launch
 ```
 rviz2 -d ~/ros2_ws/src/sl_nav2_launch/rviz/nav2_default_view.rviz
-ros2 launch sl_nav2_launch sl_nav2_launch.py
+ros2 launch sl_nav2_launch sl_nav2_launch.py use_sim_time:=true
 ```
 
 ## パラメータ調整
