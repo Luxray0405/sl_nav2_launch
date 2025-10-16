@@ -6,10 +6,10 @@ salamander用nav2起動パッケージ
 
 ## 起動
 
-rvizの起動+launch
+rvizの起動+launch。自己位置推定も含めた全体の手順は下に書いてあります。
 ```
 rviz2 -d ~/ros2_ws/src/sl_nav2_launch/rviz/nav2_default_view.rviz
-ros2 launch sl_nav2_launch sl_nav2_launch.py use_sim_time:=true
+ros2 launch sl_nav2_launch sl_nav2_launch.py
 ```
 
 ## パラメータ調整
@@ -50,3 +50,40 @@ waypoint_saver.cpp：waypoint作成・保存ノード。
 saved_wp_follower.cpp：waypoint送信ノード。
 
 
+## 自律移動の全体の手順
+
+### 自己位置推定
+```
+rviz2 -d ~/ros2_ws/src/sl_nav2_launch/rviz/nav2_default_view.rviz
+ros2 launch lidar_localization_ros2 lidar_localization.launch.py
+```
+LiDAR・IMUを起動・接続するか、rosbagを再生してLiDARとIMUのトピックをpublishすると自己位置推定が始まり、tfが発行される。  
+rosbag起動の際は、
+```
+ros2 bag play file_name --clock
+```
+のように--clockをつけること。
+
+### ナビゲーション
+```
+ros2 launch sl_nav2_launch sl_nav2_launch.py
+```
+でnav2の機能一式が起動。rosbagを再生している場合は、
+```
+ros2 launch sl_nav2_launch sl_nav2_launch.py use_sim_time:=true
+```
+のようにする。
+
+## 保存済みwaypointの使用方法
+
+[waypoint editor](https://github.com/kzm784/waypoint_editor)などを用いて作成したwaypointファイルを指定する方法。  
+ナビゲーションの準備が終わった段階で起動すると、そのままwaypointへの追従を開始する。  
+csvファイルを指定。ファイルパスは自分の環境に書き換えてください。  
+(上記のwaypoint editorを使用した場合、waypointがcsvファイルとして作成される)
+```
+ros2 launch sl_nav2_launch saved_wp_follower_launch.py waypoint_file:=/home/ueno/ros2_ws/src/sl_nav2_launch/paths/uec_250819_path.csv 
+```
+yamlファイルも同様に指定可能。
+```
+ros2 launch sl_nav2_launch saved_wp_follower_launch.py waypoint_file:=/home/ueno/ros2_ws/src/sl_nav2_launch/paths/uec_250819_path.yaml 
+```
