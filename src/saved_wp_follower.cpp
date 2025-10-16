@@ -7,6 +7,7 @@
 #include "std_srvs/srv/empty.hpp"
 #include "yaml-cpp/yaml.h"
 #include <fstream>
+#include <sstream>
 #include <string>
 #include <vector>
 #include <memory>
@@ -45,6 +46,74 @@ private:
     int last_processed_waypoint_index_ = -1; //最後に処理したウェイポイントのインデックスを記録
     std::vector<geometry_msgs::msg::PoseStamped> waypoints_; // 送信したウェイポイントを保持する
 
+    // ファイル拡張子に基づいて適切なローダーを呼び出す関数
+    std::vector<geometry_msgs::msg::PoseStamped> load_waypoints(const std::string& file_path)
+    {
+        std::string extension = file_path.substr(file_path.find_last_of(".") + 1);
+        if (extension == "yaml" || extension == "yml") {
+            return load_waypoints_from_yaml(file_path);
+        } else if (extension == "csv") {
+            return load_waypoints_from_csv(file_path);
+        } else {
+            RCLCPP_ERROR(this->get_logger(), "Unsupported file format: %s", extension.c_str());
+            return {};
+        }
+    }
+    
+    // CSVファイルからウェイポイントをロードする関数 (新規追加)
+    std::vector<geometry_msgs::msg::PoseStamped> load_waypoints_from_csv(const std::string& file_path)
+    {
+        std::vector<geometry_msgs::msg::PoseStamped> waypoints;
+        std::ifstream file(file_path);
+
+        if (!file.is_open()) {
+            RCLCPP_ERROR(this->get_logger(), "Waypoint file not found at: %s", file_path.c_str());
+            return waypoints;
+        }
+
+        RCLCPP_INFO(this->get_logger(), "Loading waypoints from CSV file: %s", file_path.c_str());
+        std::string line;
+
+        // ヘッダー行をスキップ
+        if (!std::getline(file, line)) {
+            RCLCPP_ERROR(this->get_logger(), "Cannot read header line from CSV file.");
+            return waypoints;
+        }
+
+        while (std::getline(file, line)) {
+            std::stringstream ss(line);
+            std::string cell;
+            std::vector<std::string> row;
+
+            while (std::getline(ss, cell, ',')) {
+                row.push_back(cell);
+            }
+            
+            // 必要な列数があるか確認 (id, pose_x~rot_w)
+            if (row.size() < 8) continue; 
+
+            geometry_msgs::msg::PoseStamped ps;
+
+            // ヘッダー情報を設定
+            ps.header.frame_id = "map"; // CSVにはないので固定値
+            ps.header.stamp = this->get_clock()->now();
+
+            // CSVから読み込んだ値を設定
+            ps.pose.position.x = std::stod(row[1]);
+            ps.pose.position.y = std::stod(row[2]);
+            ps.pose.position.z = std::stod(row[3]);
+            ps.pose.orientation.x = std::stod(row[4]);
+            ps.pose.orientation.y = std::stod(row[5]);
+            ps.pose.orientation.z = std::stod(row[6]);
+            ps.pose.orientation.w = std::stod(row[7]);
+
+            waypoints.push_back(ps);
+        }
+        
+        RCLCPP_INFO(this->get_logger(), "Successfully loaded %zu waypoints from CSV.", waypoints.size());
+        return waypoints;
+    }
+
     // YAMLファイルからウェイポイントをロードする関数
     std::vector<geometry_msgs::msg::PoseStamped> load_waypoints_from_yaml(const std::string& file_path)
     {
@@ -57,7 +126,7 @@ private:
             return waypoints;
         }
 
-        RCLCPP_INFO(this->get_logger(), "Loading waypoints from: %s", file_path.c_str());
+        RCLCPP_INFO(this->get_logger(), "Loading waypoints from YAML: %s", file_path.c_str());
         
         try {
             YAML::Node root = YAML::LoadFile(file_path);
@@ -86,7 +155,7 @@ private:
 
                 waypoints.push_back(ps);
             }
-            RCLCPP_INFO(this->get_logger(), "Successfully loaded %zu waypoints.", waypoints.size());
+            RCLCPP_INFO(this->get_logger(), "Successfully loaded %zu waypoints from YAML.", waypoints.size());
         } catch (const YAML::Exception& e) {
             RCLCPP_ERROR(this->get_logger(), "Error while parsing YAML file: %s", e.what());
         }
@@ -97,8 +166,8 @@ private:
     // アクションゴールを送信する関数
     void send_goal(const std::string& file_path)
     {
-        // 読み込んだウェイポイントをメンバー変数に保存
-        this->waypoints_ = load_waypoints_from_yaml(file_path);
+        // 読み込んだウェイポイントをメンバー変数に保存 (load_waypointsを呼び出すように変更)
+        this->waypoints_ = load_waypoints(file_path);
         if (this->waypoints_.empty()) {
             RCLCPP_ERROR(this->get_logger(), "No waypoints to send. Shutting down.");
             rclcpp::shutdown();
