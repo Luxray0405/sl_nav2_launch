@@ -19,14 +19,17 @@ def generate_launch_description():
             description='Path to the waypoint YAML file.'
         ),
 
-        # saved_wp_followerノードを起動
+        # waypoint_publisherノードを起動
         Node(
             package='sl_nav2_launch',
-            executable='saved_wp_follower', 
-            name='saved_wp_follower',
+            executable='waypoint_publisher', 
+            name='waypoint_publisher',
             output='screen',
+            # emulate_tty=True, # Terminalの標準入力を受け付ける
+            prefix='gnome-terminal --', # 新しい端末を立ち上げる（Enterをうけとるため）
             parameters=[{
-                'waypoint_file_path': LaunchConfiguration('waypoint_file')
+                'waypoint_file_path': LaunchConfiguration('waypoint_file'),
+                'stop_indices': [1,3]
             }]
         ),
     ])

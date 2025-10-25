@@ -18,14 +18,14 @@ find_package(yaml-cpp REQUIRED)
 
 # add the executable
 add_executable(waypoint_saver src/waypoint_saver.cpp)
-add_executable(saved_wp_follower src/saved_wp_follower.cpp)
+add_executable(waypoint_publisher src/waypoint_publisher.cpp)
 
 # link dependencies
 ament_target_dependencies(waypoint_saver
   rclcpp
   geometry_msgs
 )
-ament_target_dependencies(saved_wp_follower
+ament_target_dependencies(waypoint_publisher
   rclcpp
   rclcpp_action
   nav2_msgs
@@ -38,7 +38,7 @@ target_link_libraries(waypoint_saver
   ${YAML_CPP_LIBRARIES}
 )
 
-target_link_libraries(saved_wp_follower
+target_link_libraries(waypoint_publisher
   ${YAML_CPP_LIBRARIES}
 )
 
@@ -49,7 +49,7 @@ install(DIRECTORY params DESTINATION share/${PROJECT_NAME})
 install(DIRECTORY paths DESTINATION share/${PROJECT_NAME})
 install(TARGETS
   waypoint_saver
-  saved_wp_follower
+  waypoint_publisher
   DESTINATION lib/${PROJECT_NAME}
 )
 if(BUILD_TESTING)
