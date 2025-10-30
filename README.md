@@ -30,7 +30,7 @@ map_server:
 起動するlaunchファイル。  
 sl_nav2_launchではnav2のナビゲーション機能一連を起動。  
 waypoint_saver_launchはrviz上でwaypointを指定・保存するノードを起動。  
-saved_wp_follower_launchは保存したwaypointファイルからnav2にゴール情報を送るノードを起動。
+waypoint_publisher_launchは保存したwaypointファイルからnav2にゴール情報を送るノードを起動。
 
 
 ### maps
@@ -47,7 +47,7 @@ rvizファイル。
 
 ### src
 waypoint_saver.cpp：waypoint作成・保存ノード。  
-saved_wp_follower.cpp：waypoint送信ノード。
+waypoint_publisher.cpp：waypoint送信ノード。
 
 
 ## 自律移動の全体の手順
@@ -81,9 +81,9 @@ ros2 launch sl_nav2_launch sl_nav2_launch.py use_sim_time:=true
 csvファイルを指定。ファイルパスは自分の環境に書き換えてください。  
 (上記のwaypoint editorを使用した場合、waypointがcsvファイルとして作成される)
 ```
-ros2 launch sl_nav2_launch saved_wp_follower_launch.py waypoint_file:=/home/ueno/ros2_ws/src/sl_nav2_launch/paths/uec_250819_path.csv 
+ros2 launch sl_nav2_launch waypoint_publisher_launch.py waypoint_file:=/home/ueno/ros2_ws/src/sl_nav2_launch/paths/uec_250819_path.csv 
 ```
 yamlファイルも同様に指定可能。
 ```
-ros2 launch sl_nav2_launch saved_wp_follower_launch.py waypoint_file:=/home/ueno/ros2_ws/src/sl_nav2_launch/paths/uec_250819_path.yaml 
+ros2 launch sl_nav2_launch waypoint_publisher_launch.py waypoint_file:=/home/ueno/ros2_ws/src/sl_nav2_launch/paths/uec_250819_path.yaml 
 ```
