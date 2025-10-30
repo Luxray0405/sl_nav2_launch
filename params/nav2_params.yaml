@@ -625,6 +625,9 @@ waypoint_follower:
     stop_on_failure: false
     service_introspection_mode: "disabled"
     action_server_result_timeout: 900.0
+    use_action_client: "navigate_through_poses"
+
+
     # waypoint_task_executor_plugin: "wait_at_waypoint"
     # wait_at_waypoint:
     #   plugin: "nav2_waypoint_follower::WaitAtWaypoint"
