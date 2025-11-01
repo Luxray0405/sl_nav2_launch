@@ -146,7 +146,7 @@ controller_server:
     speed_limit_topic: "speed_limit"
 
     # Progress checker parameters
-    progress_checker:waypoint_follower:
+    progress_checker:
       plugin: "nav2_controller::SimpleProgressChecker"
       required_movement_radius: 0.5
       movement_time_allowance: 10.0
@@ -159,8 +159,8 @@ controller_server:
     general_goal_checker:
       stateful: False
       plugin: "nav2_controller::SimpleGoalChecker"
-      xy_goal_tolerance: 0.8 # ゴール到達判定するxy方向距離(m)
-      yaw_goal_tolerance: 0.6 # ゴール到達判定するヨー角(rad)
+      xy_goal_tolerance: 1.0 # ゴール到達判定するxy方向距離(m)
+      yaw_goal_tolerance: 1.0 # ゴール到達判定するヨー角(rad)
     FollowPath:
       # DWB
       # plugin: "dwb_core::DWBLocalPlanner"
@@ -343,7 +343,7 @@ controller_server:
       max_angular_accel: 2.0        # 旋回速度
       max_robot_pose_search_dist: 10.0
       min_distance_to_obstacle: 2.0
-      stateful: false
+      stateful: true
 
 local_costmap:
   local_costmap:
@@ -388,6 +388,7 @@ local_costmap:
           #   * Use global topic `/scan` if you do not wish the node namespace to apply
           topic: /velodyne_points
           max_obstacle_height: 2.0
+          min_obstacle_height: 0.3
           clearing: True
           marking: True
           data_type: "PointCloud2"
@@ -438,6 +439,7 @@ global_costmap:
           #   * Use global topic `/scan` if you do not wish the node namespace to apply
           topic: /velodyne_points
           max_obstacle_height: 2.0
+          min_obstacle_height: 0.3
           clearing: True
           marking: True
           data_type: "PointCloud2"
@@ -461,7 +463,7 @@ global_costmap:
 # file & provide full path to map below. If CLI map configuration or launch default is provided, that will be used.
 map_server:
   ros__parameters:
-    yaml_filename: "/home/yama/map_data/w10_2f/w10_2f.yaml"
+    yaml_filename: "/home/yama/map_data/denchare_251028/denchare_251028.yaml"
 
     # service_introspection_mode: "disabled"
 
@@ -625,20 +627,11 @@ waypoint_follower:
     stop_on_failure: false
     service_introspection_mode: "disabled"
     action_server_result_timeout: 900.0
-
-
-    waypoint_task_executor_plugin: "pass_through_at_waypoint"
-    
     # waypoint_task_executor_plugin: "wait_at_waypoint"
     # wait_at_waypoint:
     #   plugin: "nav2_waypoint_follower::WaitAtWaypoint"
     #   enabled: True
     #   waypoint_pause_duration: 200
-
-    pass_through_at_waypoint:
-      plugin: "nav2_waypoint_follower::PassThroughAtWaypoint"
-      # このプラグインを有効にする
-      enabled: True
 
 route_server:
   ros__parameters:
