@@ -22,14 +22,15 @@ def generate_launch_description():
         # waypoint_publisherノードを起動
         Node(
             package='sl_nav2_launch',
-            executable='waypoint_publisher', 
-            name='waypoint_publisher',
+            executable='waypoint_publisher_navthrough', 
+            name='waypoint_publisher_navthrough',
             output='screen',
             # emulate_tty=True, # Terminalの標準入力を受け付ける
             prefix='gnome-terminal --', # 新しい端末を立ち上げる（Enterをうけとるため）
             parameters=[{
                 'waypoint_file_path': LaunchConfiguration('waypoint_file'),
                 'stop_indices': [10,25]
+                # 'stop_indices': [3]
             }]
         ),
     ])

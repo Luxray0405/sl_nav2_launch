@@ -1,6 +1,6 @@
 #include "rclcpp/rclcpp.hpp"
 #include "rclcpp_action/rclcpp_action.hpp"
-#include "nav2_msgs/action/follow_waypoints.hpp"
+#include "nav2_msgs/action/navigate_through_poses.hpp"
 #include "geometry_msgs/msg/pose_stamped.hpp"
 #include "std_msgs/msg/string.hpp"
 #include "std_msgs/msg/empty.hpp"
@@ -17,8 +17,8 @@
 class WaypointPublisher : public rclcpp::Node
 {
 public:
-    using FollowWaypoints = nav2_msgs::action::FollowWaypoints;
-    using GoalHandleFollowWaypoints = rclcpp_action::ClientGoalHandle<FollowWaypoints>;
+    using NavigateThroughPoses = nav2_msgs::action::NavigateThroughPoses;
+    using GoalHandleNavigateThroughPoses = rclcpp_action::ClientGoalHandle<NavigateThroughPoses>;
 
     explicit WaypointPublisher(const rclcpp::NodeOptions & options = rclcpp::NodeOptions())
     : Node("waypoint_publisher", options)
@@ -34,7 +34,7 @@ public:
         std::sort(stop_indices_.begin(), stop_indices_.end()); // 順番通りに処理するためソート
 
         // アクションクライアント、Publisher、Service Clientを作成
-        this->action_client_ = rclcpp_action::create_client<FollowWaypoints>(this, "/follow_waypoints");
+        this->action_client_ = rclcpp_action::create_client<NavigateThroughPoses>(this, "/navigate_through_poses");
         event_publisher_ = this->create_publisher<std_msgs::msg::String>("/waypoint_event", 10);
         dummy_service_client_ = this->create_client<std_srvs::srv::Empty>("/trigger_action");
         start_motion_publisher_ = this->create_publisher<std_msgs::msg::Empty>("/start_motion", 10);
@@ -106,7 +106,7 @@ public:
         // 1. 送信するウェイポイントの範囲を決定
         int start_idx = current_segment_start_index_;
         int end_idx;
-        int max_valid_index = static_cast<int>(all_waypoints_.size()) - 1;
+        int max_valid_index = static_cast<int>(all_waypoints_.size()) - 1; // [追加] 最大インデックス
 
         if (stop_index_tracker_ < stop_indices_.size()) {
             // 次の停止位置が指定されている場合
@@ -115,7 +115,7 @@ public:
             stop_index_tracker_++;
         } else {
             // これが最後のセグメント（指定された停止位置の残りがない）
-            end_idx = max_valid_index;
+            end_idx = max_valid_index; 
             all_segments_sent_ = true; // フラグを立てる
         }
 
@@ -134,7 +134,7 @@ public:
             stop_index_tracker_ = stop_indices_.size(); 
         }
 
-        if (start_idx > end_idx || start_idx > max_valid_index) {
+        if (start_idx > end_idx || start_idx > max_valid_index){
             RCLCPP_INFO(this->get_logger(), "All waypoint segments have been processed.");
             rclcpp::shutdown();
             return;
@@ -156,10 +156,10 @@ public:
                     start_idx, end_idx, segment_waypoints.size());
 
         // 4. ゴールを送信
-        auto goal_msg = FollowWaypoints::Goal();
+        auto goal_msg = NavigateThroughPoses::Goal();
         goal_msg.poses = segment_waypoints;
 
-        auto send_goal_options = rclcpp_action::Client<FollowWaypoints>::SendGoalOptions();
+        auto send_goal_options = rclcpp_action::Client<NavigateThroughPoses>::SendGoalOptions();
         send_goal_options.goal_response_callback =
             std::bind(&WaypointPublisher::goal_response_callback, this, std::placeholders::_1);
         send_goal_options.feedback_callback =
@@ -173,7 +173,7 @@ public:
 
 private:
     // ROS 2関連のメンバー変数
-    rclcpp_action::Client<FollowWaypoints>::SharedPtr action_client_;
+    rclcpp_action::Client<NavigateThroughPoses>::SharedPtr action_client_;
     rclcpp::Publisher<std_msgs::msg::String>::SharedPtr event_publisher_;
     rclcpp::Client<std_srvs::srv::Empty>::SharedPtr dummy_service_client_;
     rclcpp::Publisher<std_msgs::msg::Empty>::SharedPtr start_motion_publisher_;
@@ -192,7 +192,7 @@ private:
     int last_processed_waypoint_index_ = -1; // on_waypoint_reached処理済みのインデックス
     
     std::mutex goal_handle_mutex_;
-    GoalHandleFollowWaypoints::SharedPtr active_goal_handle_ = nullptr;
+    GoalHandleNavigateThroughPoses::SharedPtr active_goal_handle_ = nullptr;
 
     // ファイル拡張子に基づいて適切なローダーを呼び出す関数
     std::vector<geometry_msgs::msg::PoseStamped> load_waypoints(const std::string& file_path)
@@ -328,12 +328,12 @@ private:
     //         return;
     //     }
 
-    //     auto goal_msg = FollowWaypoints::Goal();
+    //     auto goal_msg = NavigateThroughPoses::Goal();
     //     goal_msg.poses = this->waypoints_; // 保存したメンバー変数を使用
 
     //     RCLCPP_INFO(this->get_logger(), "Sending goal request...");
         
-    //     auto send_goal_options = rclcpp_action::Client<FollowWaypoints>::SendGoalOptions();
+    //     auto send_goal_options = rclcpp_action::Client<NavigateThroughPoses>::SendGoalOptions();
     //     send_goal_options.goal_response_callback =
     //         std::bind(&WaypointPublisher::goal_response_callback, this, std::placeholders::_1);
     //     send_goal_options.feedback_callback =
@@ -389,7 +389,7 @@ private:
     }
 
     // 各種コールバック関数
-    void goal_response_callback(const GoalHandleFollowWaypoints::SharedPtr & goal_handle)
+    void goal_response_callback(const GoalHandleNavigateThroughPoses::SharedPtr & goal_handle)
     {
         if (!goal_handle) {
             RCLCPP_ERROR(this->get_logger(), "Segment Goal was rejected by server");
@@ -403,35 +403,21 @@ private:
     }
 
     void feedback_callback(
-        GoalHandleFollowWaypoints::SharedPtr,
-        const std::shared_ptr<const FollowWaypoints::Feedback> feedback)
+        GoalHandleNavigateThroughPoses::SharedPtr,
+        const std::shared_ptr<const NavigateThroughPoses::Feedback> feedback)
     {
-        // feedback->current_waypoint はセグメント内のインデックス (0始まり、次に向かう場所)
-        int segment_current_idx = feedback->current_waypoint;
-
-        // グローバルインデックスに変換 (今到着した場所 = 向かう場所 - 1)
-        int reached_global_index = active_segment_start_index_ + segment_current_idx - 1;
-
         RCLCPP_INFO(this->get_logger(), 
-            "Feedback: Heading to segment_idx %d (Global %d)", 
-            segment_current_idx, active_segment_start_index_ + segment_current_idx);
-
-        // on_waypoint_reachedを呼び出す
-        // (グローバルインデックスが0以上、かつ未処理の場合)
-        if (reached_global_index >= 0 && reached_global_index != last_processed_waypoint_index_)
-        {
-            on_waypoint_reached(reached_global_index);
-            last_processed_waypoint_index_ = reached_global_index;
-        }
+        "Feedback: Distance remaining to segment goal: %.2f m, Nav time: %.1f s", 
+        feedback->distance_remaining, 
+        rclcpp::Duration(feedback->navigation_time).seconds());
     }
 
-    void result_callback(const GoalHandleFollowWaypoints::WrappedResult & result)
+    void result_callback(const GoalHandleNavigateThroughPoses::WrappedResult & result)
     {
         { // [追加] ロックのためのスコープ
             std::lock_guard<std::mutex> lock(goal_handle_mutex_);
             active_goal_handle_ = nullptr; // [追加] ゴールが終了したのでクリア
         }
-
         goal_active_ = false; // アクションが完了したのでフラグを下ろす
 
         // どのウェイポイントに到着したか（セグメントの最後のインデックス）
