@@ -19,6 +19,7 @@ find_package(yaml-cpp REQUIRED)
 # add the executable
 add_executable(waypoint_saver src/waypoint_saver.cpp)
 add_executable(waypoint_publisher src/waypoint_publisher.cpp)
+add_executable(waypoint_publisher_navthrough src/waypoint_publisher_navthrough.cpp)
 
 # link dependencies
 ament_target_dependencies(waypoint_saver
@@ -32,13 +33,22 @@ ament_target_dependencies(waypoint_publisher
   std_srvs
   geometry_msgs
 )
+ament_target_dependencies(waypoint_publisher_navthrough
+  rclcpp
+  rclcpp_action
+  nav2_msgs
+  std_srvs
+  geometry_msgs
+)
 
 # 外部ライブラリ(yaml-cpp)をリンク
 target_link_libraries(waypoint_saver
   ${YAML_CPP_LIBRARIES}
 )
-
 target_link_libraries(waypoint_publisher
+  ${YAML_CPP_LIBRARIES}
+)
+target_link_libraries(waypoint_publisher_navthrough
   ${YAML_CPP_LIBRARIES}
 )
 
@@ -50,6 +60,7 @@ install(DIRECTORY paths DESTINATION share/${PROJECT_NAME})
 install(TARGETS
   waypoint_saver
   waypoint_publisher
+  waypoint_publisher_navthrough
   DESTINATION lib/${PROJECT_NAME}
 )
 if(BUILD_TESTING)

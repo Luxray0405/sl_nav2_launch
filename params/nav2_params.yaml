@@ -162,45 +162,46 @@ controller_server:
       xy_goal_tolerance: 0.6 # ゴール到達判定するxy方向距離(m)
       yaw_goal_tolerance: 0.6 # ゴール到達判定するヨー角(rad)
     FollowPath:
-      # DWB
+      # # DWB
       # plugin: "dwb_core::DWBLocalPlanner"
       # debug_trajectory_details: True
       # min_vel_x: 0.0 # 最小x速度(m/s)
       # min_vel_y: 0.0 # 最小y速度(m/s)
       # max_vel_x: 0.5 # 最大x速度(m/s)
       # max_vel_y: 0.0 # 最大y速度(m/s)
-      # max_vel_theta: 0.5 # 最大角速度(rad/s)
+      # max_vel_theta: 0.25 # 最大角速度(rad/s)
       # min_speed_xy: 0.0 # 最小移動速度(m/s)
-      # max_speed_xy: 1.0 # 最大移動速度(m/s)
+      # max_speed_xy: 2.0 # 最大移動速度(m/s)
       # min_speed_theta: 0.0 # 最小角速度(rad/s)
       # acc_lim_x: 2.5 # 最大x加速度(m/s^2)
       # acc_lim_y: 0.0 # 最大y加速度(m/s^2)
-      # acc_lim_theta: 1.0 # 最大角加速度(rad/s^2)
+      # acc_lim_theta: 0.25 # 最大角加速度(rad/s^2)
       # decel_lim_x: -2.5 # 最大x減速度(m/s^2)
       # decel_lim_y: 0.0 # 最大y減速度(m/s^2)
       # decel_lim_theta: -1.0 # 最大角減速度(rad/s^2)
       # vx_samples: 20 # x方向の速度サンプル数
       # vy_samples: 5 # y方向の速度サンプル数
       # vtheta_samples: 20 # 角度方向の速度サンプル数
-      # sim_time: 1.2 # DWBのシミュレーション時間   # 1.7
+      # sim_time: 1.7 # DWBのシミュレーション時間
       # linear_granularity: 0.05 
       # angular_granularity: 0.025
       # transform_tolerance: 0.2
       # xy_goal_tolerance: 0.25
-      # trans_stopped_velocity: 0.05    # 0.25
+      # trans_stopped_velocity: 0.25
       # short_circuit_trajectory_evaluation: True
       # limit_vel_cmd_in_traj: False
       # stateful: True
       # # critics: 評価基準、評価関数の重み
       # critics: ["RotateToGoal", "Oscillation", "BaseObstacle", "GoalAlign", "PathAlign", "PathDist", "GoalDist"]
-      # BaseObstacle.scale: 1.0 # 障害物との近さに対する重み # default = 0.02 
-      # PathAlign.scale: 5.0 # 経路のからの方向（角度）に対する重み  # 10.0
-      # GoalAlign.scale: 12.0 # ゴールのからの方向（角度）に対する重み  # 24.0
-      # PathAlign.forward_point_distance: 1.0 # 経路上何m先の点と向きを合わせようとするか
+      # BaseObstacle.scale: 0.02 # 障害物との近さに対する重み
+      # # BaseObstacle.scaleを20,30とかにすることで少し障害物に反応するようにはなったが、避けてはくれない
+      # PathAlign.scale: 10.0 # 経路からの方向（角度）に対する重み
+      # GoalAlign.scale: 10.0 # ゴールからの方向（角度）に対する重み
+      # PathAlign.forward_point_distance: 3.0 # 経路上何m先の点と向きを合わせようとするか 遠くするといいかも？
       # GoalAlign.forward_point_distance: 0.1 # ゴール何m前の点と向きを合わせようとするか
-      # PathDist.scale: 10.0 # 経路からの距離に対する重み # 20.0
-      # GoalDist.scale: 12.0 # ゴールからの距離に対する重み   # 24.0
-      # RotateToGoal.scale: 16.0 # ゴールでの最終ヨー角に対する重み # 32.0
+      # PathDist.scale: 20.0 # 経路からの距離に対する重み
+      # GoalDist.scale: 24.0 # ゴールからの距離に対する重み
+      # RotateToGoal.scale: 32.0 # ゴールでの最終ヨー角に対する重み
       # RotateToGoal.slowing_factor: 5.0 # 回転速度を緩やかに変化させるための係数
       # RotateToGoal.lookahead_time: -1.0
 
@@ -315,7 +316,7 @@ controller_server:
       #   twirling_cost_power: 1
       #   twirling_cost_weight: 10.0
 
-      # # RPP
+      # RPP
       plugin: "nav2_regulated_pure_pursuit_controller::RegulatedPurePursuitController"
       desired_linear_vel: 0.5       # 標準的な速度
       lookahead_dist: 1.2           # どの程度先を見るか
@@ -368,7 +369,7 @@ local_costmap:
       inflation_layer:
         plugin: "nav2_costmap_2d::InflationLayer"
         cost_scaling_factor: 3.0
-        inflation_radius: 0.5
+        inflation_radius: 0.2 # 0.5
       voxel_layer:
         plugin: "nav2_costmap_2d::VoxelLayer"
         enabled: True
@@ -386,7 +387,8 @@ local_costmap:
           #   * User chosen topic is `scan`.
           #   * Topic will be remapped to `/tb4/scan` without `local_costmap`.
           #   * Use global topic `/scan` if you do not wish the node namespace to apply
-          topic: /velodyne_points
+          # topic: /velodyne_points
+          topic: /velodyne_points          
           max_obstacle_height: 2.0
           min_obstacle_height: 1.0
           clearing: True
@@ -439,7 +441,7 @@ global_costmap:
           #   * Use global topic `/scan` if you do not wish the node namespace to apply
           topic: /velodyne_points
           max_obstacle_height: 2.0
-          min_obstacle_height: 1.0
+          min_obstacle_height: 1.8
           clearing: True
           marking: True
           data_type: "PointCloud2"
@@ -453,7 +455,7 @@ global_costmap:
       inflation_layer:
         plugin: "nav2_costmap_2d::InflationLayer"
         cost_scaling_factor: 3.0
-        inflation_radius: 0.3
+        inflation_radius: 0.3 # 0.7
       always_send_full_costmap: True
       service_introspection_mode: "disabled"
 
@@ -463,10 +465,10 @@ global_costmap:
 # file & provide full path to map below. If CLI map configuration or launch default is provided, that will be used.
 map_server:
   ros__parameters:
-    # yaml_filename: "/home/yama/map_data/denchare_251028/denchare_251028.yaml"
-    yaml_filename: "/home/yama/map_data/w10_2f/w10_2f.yaml"
-
-
+    # yaml_filename: "/home/ueno/map_data/uec_250819/uec_250819.yaml"
+    # yaml_filename: "/home/ueno/map_data/w10_2f/w10_2f.yaml"
+    yaml_filename: "/home/ueno/map_data/denchare_251028/denchare_251028.yaml"
+    # yaml_filename: "/home/ueno/map_data/tsukuba_kakunin_250920_v3/tsukuba_kakunin_250920_v3.yaml"
     # service_introspection_mode: "disabled"
 
 keepout_filter_mask_server:
