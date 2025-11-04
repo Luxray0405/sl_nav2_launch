@@ -83,7 +83,7 @@ csvファイルを指定。ファイルパスは自分の環境に書き換え�
 ```
 ros2 launch sl_nav2_launch waypoint_publisher_launch.py waypoint_file:=/home/ueno/ros2_ws/src/sl_nav2_launch/paths/uec_250819_path.csv 
 ```
-yamlファイルも同様に指定可能。
+nav_throughモードを用いる場合
 ```
-ros2 launch sl_nav2_launch waypoint_publisher_launch.py waypoint_file:=/home/ueno/ros2_ws/src/sl_nav2_launch/paths/uec_250819_path.yaml 
+ros2 launch sl_nav2_launch waypoint_publisher_navthrough_launch.py waypoint_file:=/home/ueno/ros2_ws/src/sl_nav2_launch/paths/uec_250819_path.yaml 
 ```
