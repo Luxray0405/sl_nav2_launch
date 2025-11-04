@@ -463,7 +463,9 @@ global_costmap:
 # file & provide full path to map below. If CLI map configuration or launch default is provided, that will be used.
 map_server:
   ros__parameters:
-    yaml_filename: "/home/yama/map_data/denchare_251028/denchare_251028.yaml"
+    # yaml_filename: "/home/yama/map_data/denchare_251028/denchare_251028.yaml"
+    yaml_filename: "/home/yama/map_data/w10_2f/w10_2f.yaml"
+
 
     # service_introspection_mode: "disabled"
 
