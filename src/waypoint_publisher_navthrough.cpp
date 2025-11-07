@@ -25,13 +25,29 @@ public:
     {
         // パラメータを宣言し、ファイルパスを取得
         this->declare_parameter<std::string>("waypoint_file_path", "default_path.yaml");
-        this->declare_parameter<std::vector<int64_t>>("stop_indices", std::vector<int64_t>{}); 
+        this->declare_parameter<std::vector<int64_t>>("manual_stop_indices", std::vector<int64_t>{});
+        this->declare_parameter<std::vector<int64_t>>("auto_stop_indices", std::vector<int64_t>{});
         std::string waypoint_file_path = this->get_parameter("waypoint_file_path").as_string();
-        auto stop_indices_long = this->get_parameter("stop_indices").as_integer_array();
-        
-        // int64_tからintに変換して保存
-        stop_indices_.assign(stop_indices_long.begin(), stop_indices_long.end());
-        std::sort(stop_indices_.begin(), stop_indices_.end()); // 順番通りに処理するためソート
+        auto manual_stops_long = this->get_parameter("manual_stop_indices").as_integer_array();
+        auto auto_stops_long = this->get_parameter("auto_stop_indices").as_integer_array();      
+
+        // 手動停止リストをセットに保存 (int64_t -> int)
+        for (int64_t idx : manual_stops_long) {
+            manual_stops_set_.insert(static_cast<int>(idx));
+        }
+
+        // 両方のリストを stop_indices_ (std::vector<int>) にマージ
+        for (int idx : manual_stops_set_) {
+            stop_indices_.push_back(idx);
+        }
+        for (int64_t idx : auto_stops_long) {
+            // 重複を避けるため、manual_stops_set_ にないものだけ追加
+            if (manual_stops_set_.find(static_cast<int>(idx)) == manual_stops_set_.end()) {
+                stop_indices_.push_back(static_cast<int>(idx));
+            }
+        }
+         // 順番通りに処理するためソート
+        std::sort(stop_indices_.begin(), stop_indices_.end());
 
         // アクションクライアント、Publisher、Service Clientを作成
         this->action_client_ = rclcpp_action::create_client<NavigateThroughPoses>(this, "/navigate_through_poses");
@@ -188,6 +204,7 @@ private:
     std::atomic<bool> waiting_for_input_ = {false}; // ターミナルの入力待ちか
     std::atomic<bool> goal_active_ = {false};       // アクションが実行中か
     std::atomic<bool> all_segments_sent_ = {false}; // 最後のセグメントを送信済みか
+    std::set<int> manual_stops_set_;           // 手動停止（入力待ち）するインデックスを保持するセット
 
     int last_processed_waypoint_index_ = -1; // on_waypoint_reached処理済みのインデックス
     
@@ -439,8 +456,19 @@ private:
                     rclcpp::shutdown(); // ノードを終了
                 } else {
                     // まだ次のセグメントがある場合
-                    RCLCPP_INFO(this->get_logger(), "Robot stopped at index %d. Waiting for input...", reached_index);
-                    waiting_for_input_ = true; // mainループに入力待ちを通知
+                    // 停止したインデックスが、手動停止リストに含まれているか確認
+                    if (manual_stops_set_.count(reached_index)) 
+                    {
+                        // 手動停止リストに含まれていた場合 -> 入力待ち
+                        RCLCPP_INFO(this->get_logger(), "Robot stopped at MANUAL index %d. Waiting for input...", reached_index);
+                        waiting_for_input_ = true; // mainループに入力待ちを通知
+                    } 
+                    else 
+                    {
+                        // 自動停止リストだった場合 -> 即座に次を送信
+                        RCLCPP_INFO(this->get_logger(), "Robot at AUTO index %d. Sending next segment...", reached_index);
+                        send_next_segment(); // 次のセグメントを自動で送信
+                    }
                 }
                 break;
                 

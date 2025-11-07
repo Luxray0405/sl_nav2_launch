@@ -29,8 +29,8 @@ def generate_launch_description():
             prefix='gnome-terminal --', # 新しい端末を立ち上げる（Enterをうけとるため）
             parameters=[{
                 'waypoint_file_path': LaunchConfiguration('waypoint_file'),
-                'stop_indices': [10,25]
-                # 'stop_indices': [3]
+                'manual_stop_indices': [10,25], # 入力待ちするwaypointのindex
+                'auto_stop_indices': [5,15] # 入力待ちせずにすぐ次のゴールを送信するwaypointのindex(再計画コスト減)
             }]
         ),
     ])
