@@ -56,6 +56,8 @@ public:
             return;
         }
         RCLCPP_INFO(this->get_logger(), "Action server found. Ready to send segments.");
+
+
     }
 
     ~WaypointPublisher()
