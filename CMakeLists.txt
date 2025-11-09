@@ -21,7 +21,6 @@ add_executable(waypoint_saver src/waypoint_saver.cpp)
 add_executable(waypoint_publisher src/waypoint_publisher.cpp)
 add_executable(waypoint_publisher_navthrough src/waypoint_publisher_navthrough.cpp)
 add_executable(get_poses_remaining src/get_poses_remaining.cpp)
-add_executable(add_new_goals src/add_new_goals.cpp)
 
 
 # link dependencies
@@ -52,14 +51,6 @@ ament_target_dependencies(get_poses_remaining
   geometry_msgs
 )
 
-ament_target_dependencies(add_new_goals
-  rclcpp
-  rclcpp_action
-  nav2_msgs
-  std_srvs
-  geometry_msgs
-)
-
 # 外部ライブラリ(yaml-cpp)をリンク
 target_link_libraries(waypoint_saver
   ${YAML_CPP_LIBRARIES}
@@ -81,7 +72,6 @@ install(TARGETS
   waypoint_publisher
   waypoint_publisher_navthrough
   get_poses_remaining
-  add_new_goals
   DESTINATION lib/${PROJECT_NAME}
 )
 if(BUILD_TESTING)

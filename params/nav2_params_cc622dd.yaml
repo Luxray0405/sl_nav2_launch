@@ -1,11 +1,11 @@
-amcl:
+.amcl:
   ros__parameters:
     alpha1: 0.2
     alpha2: 0.2
     alpha3: 0.2
     alpha4: 0.2
     alpha5: 0.2
-    base_frame_id: "base_link"
+    base_frame_id: "base_footprint"
     beam_skip_distance: 0.5
     beam_skip_error_threshold: 0.9
     beam_skip_threshold: 0.3
@@ -19,7 +19,7 @@ amcl:
     max_beams: 60
     max_particles: 2000
     min_particles: 500
-    odom_frame_id: "map"
+    odom_frame_id: "odom"
     pf_err: 0.05
     pf_z: 0.99
     recovery_alpha_fast: 0.0
@@ -28,7 +28,7 @@ amcl:
     robot_model_type: "nav2_amcl::DifferentialMotionModel"
     save_pose_rate: 0.5
     sigma_hit: 0.2
-    tf_broadcast: false
+    tf_broadcast: true
     transform_tolerance: 1.0
     service_introspection_mode: "disabled"
     update_min_a: 0.2
@@ -133,7 +133,7 @@ bt_navigator:
 
 controller_server:
   ros__parameters:
-    controller_frequency: 10.0
+    controller_frequency: 20.0
     costmap_update_timeout: 0.30
     min_x_velocity_threshold: 0.001
     min_y_velocity_threshold: 0.0   # 0.5
@@ -162,46 +162,45 @@ controller_server:
       xy_goal_tolerance: 0.6 # ゴール到達判定するxy方向距離(m)
       yaw_goal_tolerance: 0.6 # ゴール到達判定するヨー角(rad)
     FollowPath:
-      # # DWB
+      # DWB
       # plugin: "dwb_core::DWBLocalPlanner"
       # debug_trajectory_details: True
       # min_vel_x: 0.0 # 最小x速度(m/s)
       # min_vel_y: 0.0 # 最小y速度(m/s)
       # max_vel_x: 0.5 # 最大x速度(m/s)
       # max_vel_y: 0.0 # 最大y速度(m/s)
-      # max_vel_theta: 0.25 # 最大角速度(rad/s)
+      # max_vel_theta: 0.5 # 最大角速度(rad/s)
       # min_speed_xy: 0.0 # 最小移動速度(m/s)
-      # max_speed_xy: 2.0 # 最大移動速度(m/s)
+      # max_speed_xy: 1.0 # 最大移動速度(m/s)
       # min_speed_theta: 0.0 # 最小角速度(rad/s)
       # acc_lim_x: 2.5 # 最大x加速度(m/s^2)
       # acc_lim_y: 0.0 # 最大y加速度(m/s^2)
-      # acc_lim_theta: 0.25 # 最大角加速度(rad/s^2)
+      # acc_lim_theta: 1.0 # 最大角加速度(rad/s^2)
       # decel_lim_x: -2.5 # 最大x減速度(m/s^2)
       # decel_lim_y: 0.0 # 最大y減速度(m/s^2)
       # decel_lim_theta: -1.0 # 最大角減速度(rad/s^2)
       # vx_samples: 20 # x方向の速度サンプル数
       # vy_samples: 5 # y方向の速度サンプル数
       # vtheta_samples: 20 # 角度方向の速度サンプル数
-      # sim_time: 1.7 # DWBのシミュレーション時間
+      # sim_time: 1.2 # DWBのシミュレーション時間   # 1.7
       # linear_granularity: 0.05 
       # angular_granularity: 0.025
       # transform_tolerance: 0.2
       # xy_goal_tolerance: 0.25
-      # trans_stopped_velocity: 0.25
+      # trans_stopped_velocity: 0.05    # 0.25
       # short_circuit_trajectory_evaluation: True
       # limit_vel_cmd_in_traj: False
       # stateful: True
       # # critics: 評価基準、評価関数の重み
       # critics: ["RotateToGoal", "Oscillation", "BaseObstacle", "GoalAlign", "PathAlign", "PathDist", "GoalDist"]
-      # BaseObstacle.scale: 0.02 # 障害物との近さに対する重み
-      # # BaseObstacle.scaleを20,30とかにすることで少し障害物に反応するようにはなったが、避けてはくれない
-      # PathAlign.scale: 10.0 # 経路からの方向（角度）に対する重み
-      # GoalAlign.scale: 10.0 # ゴールからの方向（角度）に対する重み
-      # PathAlign.forward_point_distance: 3.0 # 経路上何m先の点と向きを合わせようとするか 遠くするといいかも？
+      # BaseObstacle.scale: 1.0 # 障害物との近さに対する重み # default = 0.02 
+      # PathAlign.scale: 5.0 # 経路のからの方向（角度）に対する重み  # 10.0
+      # GoalAlign.scale: 12.0 # ゴールのからの方向（角度）に対する重み  # 24.0
+      # PathAlign.forward_point_distance: 1.0 # 経路上何m先の点と向きを合わせようとするか
       # GoalAlign.forward_point_distance: 0.1 # ゴール何m前の点と向きを合わせようとするか
-      # PathDist.scale: 20.0 # 経路からの距離に対する重み
-      # GoalDist.scale: 24.0 # ゴールからの距離に対する重み
-      # RotateToGoal.scale: 32.0 # ゴールでの最終ヨー角に対する重み
+      # PathDist.scale: 10.0 # 経路からの距離に対する重み # 20.0
+      # GoalDist.scale: 12.0 # ゴールからの距離に対する重み   # 24.0
+      # RotateToGoal.scale: 16.0 # ゴールでの最終ヨー角に対する重み # 32.0
       # RotateToGoal.slowing_factor: 5.0 # 回転速度を緩やかに変化させるための係数
       # RotateToGoal.lookahead_time: -1.0
 
@@ -316,14 +315,14 @@ controller_server:
       #   twirling_cost_power: 1
       #   twirling_cost_weight: 10.0
 
-      # RPP
+      # # RPP
       plugin: "nav2_regulated_pure_pursuit_controller::RegulatedPurePursuitController"
-      desired_linear_vel: 0.4       # 標準的な速度
-      lookahead_dist: 1.5           # どの程度先を見るか
-      min_lookahead_dist: 1.0       # 動的lookaheadの最小値
-      max_lookahead_dist: 2.0       # 動的lookaheadの最大値
-      lookahead_time: 1.0           # 動的lookahead = vel * lookahead_time 
-      rotate_to_heading_angular_vel: 1.4
+      desired_linear_vel: 0.5       # 標準的な速度
+      lookahead_dist: 1.2           # どの程度先を見るか
+      min_lookahead_dist: 0.3       # 動的lookaheadの最小値
+      max_lookahead_dist: 1.5       # 動的lookaheadの最大値
+      lookahead_time: 1.5           # 動的lookahead = vel * lookahead_time 
+      rotate_to_heading_angular_vel: 1.8
       transform_tolerance: 0.1
       use_velocity_scaled_lookahead_dist: false   # 動的lookaheadの切り替え
       min_approach_linear_velocity: 0.05
@@ -351,14 +350,14 @@ local_costmap:
     ros__parameters:
       update_frequency: 5.0
       publish_frequency: 2.0
-      global_frame: map
+      global_frame: odom
       robot_base_frame: base_link
       rolling_window: true
       width: 3
       height: 3
       resolution: 0.05
       robot_radius: 0.22
-      plugins: ["obstacle_layer", "inflation_layer"]
+      plugins: ["voxel_layer", "inflation_layer"]
       # filters: ["keepout_filter"]
       # keepout_filter:
       #   plugin: "nav2_costmap_2d::KeepoutFilter"
@@ -369,46 +368,33 @@ local_costmap:
       inflation_layer:
         plugin: "nav2_costmap_2d::InflationLayer"
         cost_scaling_factor: 3.0
-        inflation_radius: 0.3 # 0.5
-      # voxel_layer:
-      #   plugin: "nav2_costmap_2d::VoxelLayer"
-      #   enabled: True
-      #   publish_voxel_map: True
-      #   origin_z: 0.1 # 0.5
-      #   z_resolution: 0.05
-      #   z_voxels: 16
-      #   max_obstacle_height: 2.0
-      #   mark_threshold: 0
-      #   observation_sources: scan
-      #   scan:
-      #     # A relative topic will be appended to the parent of the local_costmap namespace.
-      #     # For example:
-      #     #   * User chosen namespace is `tb4`.
-      #     #   * User chosen topic is `scan`.
-      #     #   * Topic will be remapped to `/tb4/scan` without `local_costmap`.
-      #     #   * Use global topic `/scan` if you do not wish the node namespace to apply
-      #     # topic: /velodyne_points
-      #     topic: /velodyne_points          
-      #     max_obstacle_height: 2.0
-      #     # min_obstacle_height: 0.1
-      #     clearing: True
-      #     marking: True
-      #     data_type: "PointCloud2"
-      #     raytrace_max_range: 5.0
-      #     raytrace_min_range: 0.0
-      #     obstacle_max_range: 2.5
-      #     obstacle_min_range: 0.0
-      obstacle_layer:
-        plugin: "nav2_costmap_2d::ObstacleLayer"
+        inflation_radius: 0.5
+      voxel_layer:
+        plugin: "nav2_costmap_2d::VoxelLayer"
         enabled: True
-        observation_sources: scan_source
-        scan_source:
-          topic: /scan             # ← /scan を購読
-          data_type: "LaserScan" # ← LaserScan を指定
-          marking: True
+        publish_voxel_map: True
+        origin_z: 0.5
+        z_resolution: 0.05
+        z_voxels: 16
+        max_obstacle_height: 2.0
+        mark_threshold: 0
+        observation_sources: scan
+        scan:
+          # A relative topic will be appended to the parent of the local_costmap namespace.
+          # For example:
+          #   * User chosen namespace is `tb4`.
+          #   * User chosen topic is `scan`.
+          #   * Topic will be remapped to `/tb4/scan` without `local_costmap`.
+          #   * Use global topic `/scan` if you do not wish the node namespace to apply
+          topic: /velodyne_points
+          max_obstacle_height: 2.0
           clearing: True
-          obstacle_max_range: 2.5
+          marking: True
+          data_type: "PointCloud2"
           raytrace_max_range: 5.0
+          raytrace_min_range: 0.0
+          obstacle_max_range: 2.5
+          obstacle_min_range: 0.0
       static_layer:
         plugin: "nav2_costmap_2d::StaticLayer"
         map_subscribe_transient_local: False
@@ -421,13 +407,12 @@ global_costmap:
     ros__parameters:
       update_frequency: 1.0
       publish_frequency: 1.0
-      global_frame: map_base
+      global_frame: map
       robot_base_frame: base_link
-      robot_radius: 0.5 # 0.22
+      robot_radius: 0.22
       resolution: 0.05
       track_unknown_space: true
       plugins: ["static_layer", "obstacle_layer", "inflation_layer"]
-      # plugins: ["static_layer", "voxel_layer", "inflation_layer"]
       # filters: ["keepout_filter", "speed_filter"]
       # keepout_filter:
       #   plugin: "nav2_costmap_2d::KeepoutFilter"
@@ -443,51 +428,20 @@ global_costmap:
       obstacle_layer:
         plugin: "nav2_costmap_2d::ObstacleLayer"
         enabled: True
-        observation_sources: scan_source
-        scan_source:
+        observation_sources: scan
+        scan:
           # A relative topic will be appended to the parent of the global_costmap namespace.
           # For example:
           #   * User chosen namespace is `tb4`.
           #   * User chosen topic is `scan`.
           #   * Topic will be remapped to `/tb4/scan` without `global_costmap`.
           #   * Use global topic `/scan` if you do not wish the node namespace to apply
-          # topic: /merge_clouds_node/merged_cloud # /velodyne_points
-          topic: /scan
-          # topic: /livox/lidar
-          max_obstacle_height: 5.0 # 2.0
-          min_obstacle_height: -5.0 # 0.1
-          clearing: True
-          marking: True
-          data_type: "LaserScan"
-          raytrace_max_range: 3.0
-          raytrace_min_range: 0.0
-          obstacle_max_range: 2.5
-          obstacle_min_range: 0.0
-      voxel_layer:
-        plugin: "nav2_costmap_2d::VoxelLayer"
-        enabled: True
-        publish_voxel_map: True
-        origin_z: -0.3 # 0.5
-        z_resolution: 0.05
-        z_voxels: 16
-        max_obstacle_height: 2.0
-        mark_threshold: 0
-        observation_sources: scan
-        scan:
-          # A relative topic will be appended to the parent of the local_costmap namespace.
-          # For example:
-          #   * User chosen namespace is `tb4`.
-          #   * User chosen topic is `scan`.
-          #   * Topic will be remapped to `/tb4/scan` without `local_costmap`.
-          #   * Use global topic `/scan` if you do not wish the node namespace to apply
           topic: /velodyne_points
-          # topic: /merge_clouds_node/merged_cloud # /velodyne_points
           max_obstacle_height: 2.0
-          # min_obstacle_height: 0.1
           clearing: True
           marking: True
           data_type: "PointCloud2"
-          raytrace_max_range: 5.0
+          raytrace_max_range: 3.0
           raytrace_min_range: 0.0
           obstacle_max_range: 2.5
           obstacle_min_range: 0.0
@@ -497,7 +451,7 @@ global_costmap:
       inflation_layer:
         plugin: "nav2_costmap_2d::InflationLayer"
         cost_scaling_factor: 3.0
-        inflation_radius: 0.3 # 0.7
+        inflation_radius: 0.7
       always_send_full_costmap: True
       service_introspection_mode: "disabled"
 
@@ -507,14 +461,8 @@ global_costmap:
 # file & provide full path to map below. If CLI map configuration or launch default is provided, that will be used.
 map_server:
   ros__parameters:
-    # yaml_filename: "/home/ueno/map_data/uec_250819/uec_250819.yaml"
-    # yaml_filename: "/home/ueno/map_data/w10_2f/w10_2f.yaml"
-    # yaml_filename: "/home/ueno/map_data/denchare_251028/denchare_251028.yaml"
-    # yaml_filename: "/home/ueno/map_data/tsukuba_kakunin_250920_v3/tsukuba_kakunin_250920_v3.yaml"
-    # yaml_filename: "/home/yama/map_data/uec_250819/uec_250819.yaml"
-    # yaml_filename: "/home/yama/map_data/w10_2f/w10_2f.yaml"
-    # yaml_filename: "/home/yama/map_data/denchare_251028/denchare_251028.yaml"
-    yaml_filename: "/home/yama/map_data/tsukuba_kakunin_250920/tsukuba_kakunin_250920_v3.yaml"
+    yaml_filename: "/home/yama/map_data/w10_2f/w10_2f.yaml"
+
     # service_introspection_mode: "disabled"
 
 keepout_filter_mask_server:
@@ -592,7 +540,7 @@ planner_server:
       reverse_penalty: 2.0                # Penalty to apply if motion is reversing, must be => 1
       change_penalty: 0.0                 # Penalty to apply if motion is changing directions (L to R), must be >= 0
       non_straight_penalty: 1.2           # Penalty to apply if motion is non-straight, must be => 1
-      cost_penalty: 4.0                   # Penalty to apply to higher cost areas when adding into the obstacle map dynamic programming distance expansion heuristic. This drives the robot more towards the center of passages. A value between 1.3 - 3.5 is reasonable.
+      cost_penalty: 2.0                   # Penalty to apply to higher cost areas when adding into the obstacle map dynamic programming distance expansion heuristic. This drives the robot more towards the center of passages. A value between 1.3 - 3.5 is reasonable.
       retrospective_penalty: 0.015
       lookup_table_size: 20.0             # Size of the dubin/reeds-sheep distance window to cache, in meters.
       cache_obstacle_heuristic: false     # Cache the obstacle map dynamic programming distance expansion heuristic between subsequent replannings of the same goal location. Dramatically speeds up replanning performance (40x) if costmap is largely static.
@@ -662,7 +610,7 @@ behavior_server:
       plugin: "nav2_behaviors/Wait"
     assisted_teleop:
       plugin: "nav2_behaviors/AssistedTeleop"
-    local_frame: map
+    local_frame: odom
     global_frame: map
     robot_base_frame: base_link
     transform_tolerance: 0.1
@@ -723,7 +671,7 @@ velocity_smoother:
 collision_monitor:
   ros__parameters:
     base_frame_id: "base_link"
-    odom_frame_id: "map"
+    odom_frame_id: "odom"
     cmd_vel_in_topic: "cmd_vel_smoothed"
     cmd_vel_out_topic: "cmd_vel"
     state_topic: "collision_monitor_state"
@@ -761,7 +709,7 @@ docking_server:
     undock_angular_tolerance: 0.1
     max_retries: 3
     base_frame: "base_link"
-    fixed_frame: "map"
+    fixed_frame: "odom"
     dock_prestaging_tolerance: 0.5
     service_introspection_mode: "disabled"
 
