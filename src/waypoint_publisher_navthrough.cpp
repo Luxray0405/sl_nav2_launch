@@ -54,6 +54,11 @@ public:
         event_publisher_ = this->create_publisher<std_msgs::msg::String>("/waypoint_event", 10);
         dummy_service_client_ = this->create_client<std_srvs::srv::Empty>("/trigger_action");
         start_motion_publisher_ = this->create_publisher<std_msgs::msg::Empty>("/start_motion", 10);
+        resume_subscription_ = this->create_subscription<std_msgs::msg::Empty>(
+            "/resume_waypoint", 
+            10, 
+            std::bind(&WaypointPublisher::resume_callback, this, std::placeholders::_1)
+        );
 
         // --- 全ウェイポイントを読み込んでメンバー変数に保存 ---
         RCLCPP_INFO(this->get_logger(), "Loading all waypoints...");
@@ -193,7 +198,8 @@ private:
     rclcpp::Publisher<std_msgs::msg::String>::SharedPtr event_publisher_;
     rclcpp::Client<std_srvs::srv::Empty>::SharedPtr dummy_service_client_;
     rclcpp::Publisher<std_msgs::msg::Empty>::SharedPtr start_motion_publisher_;
-    
+    rclcpp::Subscription<std_msgs::msg::Empty>::SharedPtr resume_subscription_;
+
     // --- ウェイポイントと状態管理 ---
     std::vector<geometry_msgs::msg::PoseStamped> all_waypoints_; // 全ウェイポイント
     std::vector<int> stop_indices_;          // 停止するインデックスのリスト
@@ -328,6 +334,21 @@ private:
         return waypoints;
     }
 
+    /**
+     * @brief /resume_waypoint トピック受信時のコールバック
+     */
+    void resume_callback(const std_msgs::msg::Empty::SharedPtr /*msg*/)
+    {
+        // 入力待ち状態（手動停止中）か確認
+        if (waiting_for_input_.load()) {
+            RCLCPP_INFO(this->get_logger(), "=== RESUMING (Topic received) ===");
+            // 次のセグメントを送信
+            send_next_segment();
+        } else {
+            RCLCPP_WARN(this->get_logger(), "Resume signal received, but not currently waiting for input.");
+        }
+    }
+
     // // アクションゴールを送信する関数
     // void send_goal(const std::string& file_path)
     // {
@@ -460,7 +481,7 @@ private:
                     if (manual_stops_set_.count(reached_index)) 
                     {
                         // 手動停止リストに含まれていた場合 -> 入力待ち
-                        RCLCPP_INFO(this->get_logger(), "Robot stopped at MANUAL index %d. Waiting for input...", reached_index);
+                        RCLCPP_INFO(this->get_logger(), "Robot stopped at MANUAL index %d. Waiting for resume signal on topic '/resume_waypoint'...", reached_index);
                         waiting_for_input_ = true; // mainループに入力待ちを通知
                     } 
                     else 
@@ -500,35 +521,11 @@ int main(int argc, char ** argv)
     executor.add_node(node);
 
     // 最初のセグメントを送信
-    // （アクションサーバへの接続待機はコンストラクタで行っている）
     RCLCPP_INFO(node->get_logger(), "Sending first segment...");
     node->send_next_segment();
 
-    // カスタム実行ループ
-    while (rclcpp::ok())
-    {
-        if (node->is_waiting_for_input())
-        {
-            // --- 入力待ち状態 ---
-            RCLCPP_INFO(node->get_logger(), " "); // 改行
-            RCLCPP_INFO(node->get_logger(), "=== PAUSED ===");
-            RCLCPP_INFO(node->get_logger(), "Press [Enter] in this terminal to continue to the next segment...");
-            
-            // ターミナルからの入力をブロッキングで待機
-            std::string line;
-            std::getline(std::cin, line);
-
-            if (!rclcpp::ok()) break; // Ctrl+Cなどで終了した場合
-
-            RCLCPP_INFO(node->get_logger(), "=== RESUMING ===");
-            
-            // 入力が確認されたので、次のセグメントを送信
-            node->send_next_segment();
-        }
-        
-        // 入力待ちでない間、ROSのコールバック（フィードバック、リザルト）を処理
-        executor.spin_some(std::chrono::milliseconds(100));
-    }
+    RCLCPP_INFO(node->get_logger(), "Node spinning. Waiting for action results and /resume_waypoint topic.");
+    executor.spin();
 
     rclcpp::shutdown();
     return 0;
