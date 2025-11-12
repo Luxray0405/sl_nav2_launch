@@ -358,7 +358,7 @@ local_costmap:
       height: 3
       resolution: 0.05
       robot_radius: 0.22
-      plugins: ["obstacle_layer", "inflation_layer"]
+      plugins: ["voxel_layer", "inflation_layer"]
       # filters: ["keepout_filter"]
       # keepout_filter:
       #   plugin: "nav2_costmap_2d::KeepoutFilter"
@@ -370,45 +370,34 @@ local_costmap:
         plugin: "nav2_costmap_2d::InflationLayer"
         cost_scaling_factor: 3.0
         inflation_radius: 0.3 # 0.5
-      # voxel_layer:
-      #   plugin: "nav2_costmap_2d::VoxelLayer"
-      #   enabled: True
-      #   publish_voxel_map: True
-      #   origin_z: 0.1 # 0.5
-      #   z_resolution: 0.05
-      #   z_voxels: 16
-      #   max_obstacle_height: 2.0
-      #   mark_threshold: 0
-      #   observation_sources: scan
-      #   scan:
-      #     # A relative topic will be appended to the parent of the local_costmap namespace.
-      #     # For example:
-      #     #   * User chosen namespace is `tb4`.
-      #     #   * User chosen topic is `scan`.
-      #     #   * Topic will be remapped to `/tb4/scan` without `local_costmap`.
-      #     #   * Use global topic `/scan` if you do not wish the node namespace to apply
-      #     # topic: /velodyne_points
-      #     topic: /velodyne_points          
-      #     max_obstacle_height: 2.0
-      #     # min_obstacle_height: 0.1
-      #     clearing: True
-      #     marking: True
-      #     data_type: "PointCloud2"
-      #     raytrace_max_range: 5.0
-      #     raytrace_min_range: 0.0
-      #     obstacle_max_range: 2.5
-      #     obstacle_min_range: 0.0
-      obstacle_layer:
-        plugin: "nav2_costmap_2d::ObstacleLayer"
+      voxel_layer:
+        plugin: "nav2_costmap_2d::VoxelLayer"
         enabled: True
-        observation_sources: scan_source
-        scan_source:
-          topic: /scan             # ← /scan を購読
-          data_type: "LaserScan" # ← LaserScan を指定
-          marking: True
+        publish_voxel_map: True
+        origin_z: 0.1 # 0.5
+        z_resolution: 0.05
+        z_voxels: 16
+        max_obstacle_height: 2.0
+        mark_threshold: 0
+        observation_sources: scan
+        scan:
+          # A relative topic will be appended to the parent of the local_costmap namespace.
+          # For example:
+          #   * User chosen namespace is `tb4`.
+          #   * User chosen topic is `scan`.
+          #   * Topic will be remapped to `/tb4/scan` without `local_costmap`.
+          #   * Use global topic `/scan` if you do not wish the node namespace to apply
+          # topic: /velodyne_points
+          topic: /velodyne_points          
+          max_obstacle_height: 2.0
+          # min_obstacle_height: 0.1
           clearing: True
-          obstacle_max_range: 2.5
+          marking: True
+          data_type: "PointCloud2"
           raytrace_max_range: 5.0
+          raytrace_min_range: 0.0
+          obstacle_max_range: 2.5
+          obstacle_min_range: 0.0
       static_layer:
         plugin: "nav2_costmap_2d::StaticLayer"
         map_subscribe_transient_local: False
@@ -421,13 +410,12 @@ global_costmap:
     ros__parameters:
       update_frequency: 1.0
       publish_frequency: 1.0
-      global_frame: map_base
+      global_frame: map
       robot_base_frame: base_link
       robot_radius: 0.5 # 0.22
       resolution: 0.05
       track_unknown_space: true
       plugins: ["static_layer", "obstacle_layer", "inflation_layer"]
-      # plugins: ["static_layer", "voxel_layer", "inflation_layer"]
       # filters: ["keepout_filter", "speed_filter"]
       # keepout_filter:
       #   plugin: "nav2_costmap_2d::KeepoutFilter"
@@ -443,51 +431,21 @@ global_costmap:
       obstacle_layer:
         plugin: "nav2_costmap_2d::ObstacleLayer"
         enabled: True
-        observation_sources: scan_source
-        scan_source:
+        observation_sources: scan
+        scan:
           # A relative topic will be appended to the parent of the global_costmap namespace.
           # For example:
           #   * User chosen namespace is `tb4`.
           #   * User chosen topic is `scan`.
           #   * Topic will be remapped to `/tb4/scan` without `global_costmap`.
           #   * Use global topic `/scan` if you do not wish the node namespace to apply
-          # topic: /merge_clouds_node/merged_cloud # /velodyne_points
-          topic: /scan
-          # topic: /livox/lidar
-          max_obstacle_height: 5.0 # 2.0
-          min_obstacle_height: -5.0 # 0.1
-          clearing: True
-          marking: True
-          data_type: "LaserScan"
-          raytrace_max_range: 3.0
-          raytrace_min_range: 0.0
-          obstacle_max_range: 2.5
-          obstacle_min_range: 0.0
-      voxel_layer:
-        plugin: "nav2_costmap_2d::VoxelLayer"
-        enabled: True
-        publish_voxel_map: True
-        origin_z: -0.3 # 0.5
-        z_resolution: 0.05
-        z_voxels: 16
-        max_obstacle_height: 2.0
-        mark_threshold: 0
-        observation_sources: scan
-        scan:
-          # A relative topic will be appended to the parent of the local_costmap namespace.
-          # For example:
-          #   * User chosen namespace is `tb4`.
-          #   * User chosen topic is `scan`.
-          #   * Topic will be remapped to `/tb4/scan` without `local_costmap`.
-          #   * Use global topic `/scan` if you do not wish the node namespace to apply
           topic: /velodyne_points
-          # topic: /merge_clouds_node/merged_cloud # /velodyne_points
           max_obstacle_height: 2.0
           # min_obstacle_height: 0.1
           clearing: True
           marking: True
           data_type: "PointCloud2"
-          raytrace_max_range: 5.0
+          raytrace_max_range: 3.0
           raytrace_min_range: 0.0
           obstacle_max_range: 2.5
           obstacle_min_range: 0.0
@@ -512,9 +470,9 @@ map_server:
     # yaml_filename: "/home/ueno/map_data/denchare_251028/denchare_251028.yaml"
     # yaml_filename: "/home/ueno/map_data/tsukuba_kakunin_250920_v3/tsukuba_kakunin_250920_v3.yaml"
     # yaml_filename: "/home/yama/map_data/uec_250819/uec_250819.yaml"
-    # yaml_filename: "/home/yama/map_data/w10_2f/w10_2f.yaml"
+    yaml_filename: "/home/yama/map_data/w10_2f/w10_2f.yaml"
     # yaml_filename: "/home/yama/map_data/denchare_251028/denchare_251028.yaml"
-    yaml_filename: "/home/yama/map_data/tsukuba_kakunin_250920/tsukuba_kakunin_250920_v3.yaml"
+    # yaml_filename: "/home/yama/map_data/tsukuba_kakunin_250920_v3/tsukuba_kakunin_250920_v3.yaml"
     # service_introspection_mode: "disabled"
 
 keepout_filter_mask_server:
