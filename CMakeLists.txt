@@ -20,6 +20,7 @@ find_package(yaml-cpp REQUIRED)
 add_executable(waypoint_saver src/waypoint_saver.cpp)
 add_executable(waypoint_publisher src/waypoint_publisher.cpp)
 add_executable(waypoint_publisher_navthrough src/waypoint_publisher_navthrough.cpp)
+add_executable(waypoint_publisher_navthrough_single src/waypoint_publisher_navthrough_single.cpp)
 add_executable(get_poses_remaining src/get_poses_remaining.cpp)
 
 
@@ -36,6 +37,14 @@ ament_target_dependencies(waypoint_publisher
   geometry_msgs
 )
 ament_target_dependencies(waypoint_publisher_navthrough
+  rclcpp
+  rclcpp_action
+  nav2_msgs
+  std_srvs
+  geometry_msgs
+)
+
+ament_target_dependencies(waypoint_publisher_navthrough_single
   rclcpp
   rclcpp_action
   nav2_msgs
@@ -61,6 +70,9 @@ target_link_libraries(waypoint_publisher
 target_link_libraries(waypoint_publisher_navthrough
   ${YAML_CPP_LIBRARIES}
 )
+target_link_libraries(waypoint_publisher_navthrough_single
+  ${YAML_CPP_LIBRARIES}
+)
 
 install(DIRECTORY launch DESTINATION share/${PROJECT_NAME})
 install(DIRECTORY maps DESTINATION share/${PROJECT_NAME})
@@ -71,6 +83,7 @@ install(TARGETS
   waypoint_saver
   waypoint_publisher
   waypoint_publisher_navthrough
+  waypoint_publisher_navthrough_single
   get_poses_remaining
   DESTINATION lib/${PROJECT_NAME}
 )

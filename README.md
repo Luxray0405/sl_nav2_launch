@@ -88,6 +88,11 @@ nav_throughモードを用いる場合
 ros2 launch sl_nav2_launch waypoint_publisher_navthrough_launch.py waypoint_file:=/home/ueno/ros2_ws/src/sl_nav2_launch/paths/uec_250819_path.yaml 
 ```
 
+nav_throughモードで一点ずつ送信する場合
+```
+ros2 launch sl_nav2_launch waypoint_publisher_navthrough_single_launch.py waypoint_file:=/home/ueno/ros2_ws/src/sl_nav2_launch/paths/uec_250819_path.yaml 
+```
+
 入力待ちになったら、別ターミナルで以下を実行。  
 ゴール送信が再開される。
 ```ros2 topic pub /resume_waypoint std_msgs/msg/Empty {} --once
