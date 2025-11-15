@@ -3,6 +3,7 @@
 #include "nav2_msgs/action/navigate_through_poses.hpp"
 #include "geometry_msgs/msg/pose_stamped.hpp"
 #include "std_msgs/msg/string.hpp"
+#include <std_msgs/msg/bool.hpp>
 #include "std_msgs/msg/empty.hpp"
 #include "std_srvs/srv/empty.hpp"
 #include "yaml-cpp/yaml.h"
@@ -13,6 +14,12 @@
 #include <memory>
 #include <atomic>
 #include <mutex>
+
+struct StopInterval
+{
+    size_t start_index;
+    size_t end_index;
+};
 
 class WaypointPublisher : public rclcpp::Node
 {
@@ -26,8 +33,32 @@ public:
         // パラメータを宣言し、ファイルパスを取得
         this->declare_parameter<std::string>("waypoint_file_path", "default_path.yaml");
         this->declare_parameter<std::vector<int64_t>>("manual_stop_indices", std::vector<int64_t>{});
+        this->declare_parameter<std::vector<std::string>>("stop_area", std::vector<std::string>{});
         std::string waypoint_file_path = this->get_parameter("waypoint_file_path").as_string();
         auto manual_stops_long = this->get_parameter("manual_stop_indices").as_integer_array();
+
+        auto stop_intervals_str = this->get_parameter("stop_area").as_string_array();
+        for (const std::string& interval_str : stop_intervals_str) {
+            std::stringstream ss(interval_str);
+            std::string segment;
+            std::vector<int> pair;
+            while (std::getline(ss, segment, '-')) {
+                try {
+                    pair.push_back(std::stoi(segment));
+                } catch (const std::invalid_argument& e) {
+                    RCLCPP_ERROR(this->get_logger(), "Invalid stop_interval format: %s", interval_str.c_str());
+                    pair.clear();
+                    break;
+                }
+            }
+            if (pair.size() == 2 && pair[0] <= pair[1]) {
+                stop_intervals_.push_back({static_cast<size_t>(pair[0]), static_cast<size_t>(pair[1])});
+                RCLCPP_INFO(this->get_logger(), "Loaded stop interval: WP %d to %d", pair[0], pair[1]);
+            } else {
+                RCLCPP_ERROR(this->get_logger(), "Skipping invalid stop_interval (format must be 'start-end'): %s", interval_str.c_str());
+            }
+        }
+
         // 手動停止リストをセットに保存 (int64_t -> int)
         manual_stops_set_.clear();
         for (int64_t idx : manual_stops_long) {
@@ -47,8 +78,9 @@ public:
             10, 
             std::bind(&WaypointPublisher::resume_callback, this, std::placeholders::_1)
         );
+        stop_area_pub_ = this->create_publisher<std_msgs::msg::Bool>("/stop_area_flag", rclcpp::QoS(10).transient_local());
 
-        // --- 全ウェイポイントを読み込んでメンバー変数に保存 ---
+        // 全waypointを読み込んでメンバー変数に保存
         RCLCPP_INFO(this->get_logger(), "Loading all waypoints...");
         this->all_waypoints_ = load_waypoints(waypoint_file_path);
 
@@ -65,6 +97,7 @@ public:
             return;
         }
         RCLCPP_INFO(this->get_logger(), "Action server found. Ready to send segments.");
+        publishStopState(false);
     }
 
     ~WaypointPublisher()
@@ -92,17 +125,13 @@ public:
         }
     }
 
-    /**
-     * @brief [PUBLIC] ノードがユーザーの入力待ち状態かを確認する
-     */
+    // ノードがユーザーの入力待ち状態かを確認する
     bool is_waiting_for_input() const
     {
         return waiting_for_input_.load();
     }
 
-    /**
-     * @brief [PUBLIC] 次のウェイポイントセグメント（区間）を送信する
-     */
+    // 次のwaypointセグメント（区間）を送信する
     void send_next_segment()
     {
         if (goal_active_.load() || all_segments_sent_.load()) {
@@ -112,23 +141,26 @@ public:
         
         waiting_for_input_ = false; // 入力待ち状態を解除
 
-        // 1. 送信するウェイポイントのインデックスを決定
+        //  送信するwaypointのインデックスを決定
         int current_idx = current_segment_start_index_;
         int max_valid_index = static_cast<int>(all_waypoints_.size()) - 1;
 
-        // 2. 範囲のバリデーション
+        // これから向かうウェイポイント(current_idx)が停止エリア内かを判定
+        checkAndPublishStopState(current_idx);
+
+        //  範囲のバリデーション
         if (current_idx > max_valid_index){
             RCLCPP_INFO(this->get_logger(), "All waypoints have been processed.");
             rclcpp::shutdown();
             return;
         }
 
-        // これが最後のウェイポイントか確認
+        // これが最後のwaypointか確認
         if (current_idx == max_valid_index) {
             all_segments_sent_ = true; // フラグを立てる
         }
 
-        // ウェイポイントのセグメントを作成
+        // waypointのセグメントを作成
         std::vector<geometry_msgs::msg::PoseStamped> segment_waypoints;
         segment_waypoints.push_back(all_waypoints_[current_idx]);
         // 次のセグメントのために開始インデックスを更新
@@ -162,9 +194,10 @@ private:
     rclcpp::Client<std_srvs::srv::Empty>::SharedPtr dummy_service_client_;
     rclcpp::Publisher<std_msgs::msg::Empty>::SharedPtr start_motion_publisher_;
     rclcpp::Subscription<std_msgs::msg::Empty>::SharedPtr resume_subscription_;
+    rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr stop_area_pub_;
 
-    // --- ウェイポイントと状態管理 ---
-    std::vector<geometry_msgs::msg::PoseStamped> all_waypoints_; // 全ウェイポイント
+    // waypointと状態管理
+    std::vector<geometry_msgs::msg::PoseStamped> all_waypoints_; // 全waypoint
     std::vector<int> stop_indices_;          // 停止するインデックスのリスト
     size_t stop_index_tracker_ = 0;          // stop_indices_の何番目まで処理したか
     int current_segment_start_index_ = 0;    // 次に送信するセグメントの開始インデックス
@@ -174,11 +207,47 @@ private:
     std::atomic<bool> goal_active_ = {false};       // アクションが実行中か
     std::atomic<bool> all_segments_sent_ = {false}; // 最後のセグメントを送信済みか
     std::set<int> manual_stops_set_;           // 手動停止（入力待ち）するインデックスを保持するセット
+    std::vector<StopInterval> stop_intervals_;  // 停止区間リスト
+    bool current_stop_state_ = false; // 現在の停止区間状態
 
     int last_processed_waypoint_index_ = -1; // on_waypoint_reached処理済みのインデックス
     
     std::mutex goal_handle_mutex_;
     GoalHandleNavigateThroughPoses::SharedPtr active_goal_handle_ = nullptr;
+
+    // stop_area_flag をチェックし、変化があれば発行する
+    void checkAndPublishStopState(int current_index)
+    {
+        bool is_in_stop_area = false;
+        
+        if (current_index >= 0) { // インデックスが有効な場合のみチェック
+            for (const auto & interval : stop_intervals_) {
+                if (static_cast<size_t>(current_index) > interval.start_index && 
+                    static_cast<size_t>(current_index) <= interval.end_index) {
+                    is_in_stop_area = true;
+                    break;
+                }
+            }
+        }
+        // else (current_index が -1 など) の場合は is_in_stop_area は false のまま
+
+        // 状態が変化した場合のみパブリッシュ
+        if (is_in_stop_area != current_stop_state_) {
+            RCLCPP_INFO(
+                this->get_logger(), "Stop Area Flag changing to: %s (Target WP Index: %d)", 
+                is_in_stop_area ? "True" : "False", current_index);
+            publishStopState(is_in_stop_area);
+        }
+    }
+
+    // 状態を更新し、トピックに発行する
+    void publishStopState(bool state)
+    {
+        current_stop_state_ = state;
+        auto msg = std_msgs::msg::Bool();
+        msg.data = current_stop_state_;
+        stop_area_pub_->publish(msg);
+    }
 
     // ファイル拡張子に基づいて適切なローダーを呼び出す関数
     std::vector<geometry_msgs::msg::PoseStamped> load_waypoints(const std::string& file_path)
@@ -194,7 +263,7 @@ private:
         }
     }
     
-    // CSVファイルからウェイポイントをロードする関数 (新規追加)
+    // CSVファイルからwaypointをロードする関数
     std::vector<geometry_msgs::msg::PoseStamped> load_waypoints_from_csv(const std::string& file_path)
     {
         std::vector<geometry_msgs::msg::PoseStamped> waypoints;
@@ -248,7 +317,7 @@ private:
         return waypoints;
     }
 
-    // YAMLファイルからウェイポイントをロードする関数
+    // YAMLファイルからwaypointをロードする関数
     std::vector<geometry_msgs::msg::PoseStamped> load_waypoints_from_yaml(const std::string& file_path)
     {
         std::vector<geometry_msgs::msg::PoseStamped> waypoints;
@@ -297,9 +366,7 @@ private:
         return waypoints;
     }
 
-    /**
-     * @brief /resume_waypoint トピック受信時のコールバック
-     */
+    // /resume_waypoint トピック受信時のコールバック
     void resume_callback(const std_msgs::msg::Empty::SharedPtr /*msg*/)
     {
         // 入力待ち状態（手動停止中）か確認
@@ -315,7 +382,7 @@ private:
     // // アクションゴールを送信する関数
     // void send_goal(const std::string& file_path)
     // {
-    //     // 読み込んだウェイポイントをメンバー変数に保存 (load_waypointsを呼び出すように変更)
+    //     // 読み込んだwaypointをメンバー変数に保存 (load_waypointsを呼び出すように変更)
     //     this->waypoints_ = load_waypoints(file_path);
     //     if (this->waypoints_.empty()) {
     //         RCLCPP_ERROR(this->get_logger(), "No waypoints to send. Shutting down.");
@@ -345,25 +412,25 @@ private:
     //     this->action_client_->async_send_goal(goal_msg, send_goal_options);
     // }
 
-    // ウェイポイント到着時に実行されるアクションを定義する関数
+    // waypoint到着時に実行されるアクションを定義する関数
     void on_waypoint_reached(int reached_waypoint_index)
     {
         RCLCPP_INFO(this->get_logger(), "======== Waypoint %d Reached! ========", reached_waypoint_index);
 
-        // 最後のウェイポイントのインデックスを動的に取得
+        // 最後のwaypointのインデックスを動的に取得
         int last_waypoint_index = all_waypoints_.size() - 1;
 
         // if-else if文で処理を分岐
         if (reached_waypoint_index == last_waypoint_index)
         {
-            // 最後のウェイポイントに到着した場合の処理
+            // 最後のwaypointに到着した場合の処理
             RCLCPP_INFO(this->get_logger(), "Final waypoint (index %d) reached! Publishing to /start_motion.", last_waypoint_index);
             auto empty_msg = std_msgs::msg::Empty();
             start_motion_publisher_->publish(empty_msg);
         }
         else if (reached_waypoint_index == 0)
         {
-            // // 最初のウェイポイント(インデックス0)に到着
+            // // 最初のwaypoint(インデックス0)に到着
             // RCLCPP_INFO(this->get_logger(), "Action for waypoint 0: Publishing a message.");
             // auto msg = std_msgs::msg::String();
             // msg.data = "Waypoint 0 has been reached.";
@@ -371,7 +438,7 @@ private:
         }
         else if (reached_waypoint_index == 2)
         {
-        //     // 3番目のウェイポイント(インデックス2)に到着
+        //     // 3番目のwaypoint(インデックス2)に到着
         //     RCLCPP_INFO(this->get_logger(), "Action for waypoint 2: Calling a service.");
         //     if (!dummy_service_client_->wait_for_service(std::chrono::seconds(1))) {
         //         RCLCPP_WARN(this->get_logger(), "Service /trigger_action not available.");
@@ -418,13 +485,13 @@ private:
 
     void result_callback(const GoalHandleNavigateThroughPoses::WrappedResult & result)
     {
-        { // [追加] ロックのためのスコープ
+        { // ロックのためのスコープ
             std::lock_guard<std::mutex> lock(goal_handle_mutex_);
-            active_goal_handle_ = nullptr; // [追加] ゴールが終了したのでクリア
+            active_goal_handle_ = nullptr; // ゴールが終了したのでクリア
         }
         goal_active_ = false; // アクションが完了したのでフラグを下ろす
 
-        // どのウェイポイントに到着したか（セグメントの最後のインデックス）
+        // どのwaypointに到着したか（セグメントの最後のインデックス）
         int reached_index = current_segment_end_index_; 
 
         switch (result.code) {
@@ -440,6 +507,7 @@ private:
                 if (all_segments_sent_.load()) {
                     // これが最後のセグメントだった場合
                     RCLCPP_INFO(this->get_logger(), "All segments completed successfully!");
+                    checkAndPublishStopState(-1);
                     rclcpp::shutdown(); // ノードを終了
                 } else {
                     // まだ次のセグメントがある場合
@@ -461,14 +529,17 @@ private:
                 
             case rclcpp_action::ResultCode::ABORTED:
                 RCLCPP_ERROR(this->get_logger(), "Segment Goal was aborted");
+                checkAndPublishStopState(-1);
                 rclcpp::shutdown(); // 失敗したら終了
                 break;
             case rclcpp_action::ResultCode::CANCELED:
                 RCLCPP_ERROR(this->get_logger(), "Segment Goal was canceled");
+                checkAndPublishStopState(-1);
                 rclcpp::shutdown(); // 失敗したら終了
                 break;
             default:
                 RCLCPP_ERROR(this->get_logger(), "Unknown result code");
+                checkAndPublishStopState(-1);
                 rclcpp::shutdown(); // 失敗したら終了
                 break;
         }

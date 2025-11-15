@@ -95,5 +95,6 @@ ros2 launch sl_nav2_launch waypoint_publisher_navthrough_single_launch.py waypoi
 
 入力待ちになったら、別ターミナルで以下を実行。  
 ゴール送信が再開される。
-```ros2 topic pub /resume_waypoint std_msgs/msg/Empty {} --once
+```
+ros2 topic pub /resume_waypoint std_msgs/msg/Empty {} --once
 ```
