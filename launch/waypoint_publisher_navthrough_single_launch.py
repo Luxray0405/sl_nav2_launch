@@ -27,7 +27,7 @@ def generate_launch_description():
             output='screen',
             parameters=[{
                 'waypoint_file_path': LaunchConfiguration('waypoint_file'),
-                'manual_stop_indices': [2,10,25], # 入力待ちするwaypointのindex
+                'manual_stop_indices': [10,25], # 入力待ちするwaypointのindex
             }]
         ),
     ])
