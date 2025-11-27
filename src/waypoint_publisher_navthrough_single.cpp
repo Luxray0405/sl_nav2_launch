@@ -32,6 +32,7 @@ public:
     {
         // パラメータを宣言し、ファイルパスを取得
         this->declare_parameter<std::string>("waypoint_file_path", "default_path.yaml");
+        this->declare_parameter<int>("start_waypoint_index", 0);
         this->declare_parameter<std::vector<int64_t>>("manual_stop_indices", std::vector<int64_t>{});
         this->declare_parameter<std::vector<std::string>>("stop_area", std::vector<std::string>{});
         std::string waypoint_file_path = this->get_parameter("waypoint_file_path").as_string();
@@ -88,6 +89,23 @@ public:
             RCLCPP_ERROR(this->get_logger(), "No waypoints loaded. Shutting down.");
             rclcpp::shutdown();
             return;
+        }
+
+        // 開始インデックスの設定処理
+        int start_req_index = this->get_parameter("start_waypoint_index").as_int();
+        int max_index = static_cast<int>(all_waypoints_.size()) - 1;
+
+        if (start_req_index > 0 && start_req_index <= max_index) {
+            // 指定されたインデックスが有効な範囲内であればセットする
+            current_segment_start_index_ = start_req_index;
+            RCLCPP_INFO(this->get_logger(), "Override start index: Starting from Waypoint %d", current_segment_start_index_);
+        } else if (start_req_index > max_index) {
+            // 範囲外の場合は警告を出して0から開始 (あるいは終了させる)
+            RCLCPP_WARN(this->get_logger(), "Requested start index %d is out of bounds (Max: %d). Defaulting to 0.", start_req_index, max_index);
+            current_segment_start_index_ = 0;
+        } else {
+            // 0または負の値の場合はデフォルト動作(0)
+            current_segment_start_index_ = 0;
         }
         
         RCLCPP_INFO(this->get_logger(), "Waiting for action server...");
