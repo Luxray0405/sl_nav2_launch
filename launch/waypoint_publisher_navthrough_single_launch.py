@@ -27,7 +27,7 @@ def generate_launch_description():
             output='screen',
             parameters=[{
                 'waypoint_file_path': LaunchConfiguration('waypoint_file'),
-                'start_waypoint_index': 5, # ナビゲーションを開始するwaypoint
+                'start_waypoint_index': 0, # ナビゲーションを開始するwaypoint
                 'manual_stop_indices': [10,25], # 入力待ちするwaypointのindex
                 'stop_area': ["2-5","8-11"] # mid70で障害物停止する区間
             }]
