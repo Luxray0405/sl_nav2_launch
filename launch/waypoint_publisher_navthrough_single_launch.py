@@ -28,8 +28,8 @@ def generate_launch_description():
             parameters=[{
                 'waypoint_file_path': LaunchConfiguration('waypoint_file'),
                 'start_waypoint_index': 0, # ナビゲーションを開始するwaypoint
-                'manual_stop_indices': [25], # 入力待ちするwaypointのindex
-                'stop_area': ["1-3","8-11"] # mid70で障害物停止する区間
+                'manual_stop_indices': [82], # 入力待ちするwaypointのindex
+                'stop_area': ["100-300"] # mid70で障害物停止する区間
             }]
         ),
     ])
