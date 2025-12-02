@@ -225,7 +225,7 @@ controller_server:
       vx_min: -0.5 # 最小x速度(m/s)
       vy_max: 0.0 # 最大y速度(m/s)
       wz_max: 1.0 # 最大角速度(m/s)
-      iteration_count: 2 # 1サイクルで、最適化を何回繰り返すか
+      iteration_count: 1 # 1サイクルで、最適化を何回繰り返すか
       prune_distance: 3.0  #通り過ぎた経路をより積極的に削除する
       transform_tolerance: 0.1
       temperature: 0.3 # どれくらいダイナミック（高コスト）な軌道を最適化対象とするか
@@ -273,19 +273,19 @@ controller_server:
       PreferForwardCritic:
         enabled: true
         cost_power: 1
-        cost_weight: 0.01 # 5.0
-        threshold_to_consider: 3.0 # 0.5
-      # 障害物回避に関する重み
+        cost_weight: 5.0
+        threshold_to_consider: 0.5
+      # 障害物との近さに関する重み
       CostCritic:
         enabled: true
         cost_power: 1
-        cost_weight: 15.0    # 4.5 # 7.0
+        cost_weight: 7.0    # 4.5
         near_collision_cost: 253
         critical_cost: 300.0
-        consider_footprint: true # robot_radiusではなく長方形でぶつかりを抑制
+        consider_footprint: false
         collision_cost: 1000000.0
         near_goal_distance: 1.0
-        trajectory_point_step: 1  # 測軌道上の衝突チェックを「何個飛ばし」で行うか 2とかにするとすり抜けが起こるので，1とする．
+        trajectory_point_step: 2
       # 経路との方向に対する重み
       PathAlignCritic:
         enabled: true
@@ -356,7 +356,7 @@ controller_server:
 local_costmap:
   local_costmap:
     ros__parameters:
-      update_frequency: 15.0
+      update_frequency: 5.0
       publish_frequency: 2.0
       global_frame: map
       robot_base_frame: base_link
@@ -364,8 +364,7 @@ local_costmap:
       width: 3
       height: 3
       resolution: 0.05
-      # robot_radius: 0.3 # 0.22
-      footprint: "[ [0.7, 0.4], [0.7, -0.4], [-0.3, -0.4], [-0.3, 0.4] ]"
+      robot_radius: 0.3 # 0.22
       plugins: ["obstacle_layer", "inflation_layer"]
       # filters: ["keepout_filter"]
       # keepout_filter:
@@ -421,13 +420,13 @@ local_costmap:
           clearing: True
           obstacle_max_range: 2.5
           raytrace_max_range: 5.0
-        front_scan:
-          topic: /scan_mid70             # ← /scan を購読
-          data_type: "LaserScan" # ← LaserScan を指定
-          marking: True
-          clearing: True
-          obstacle_max_range: 3.0
-          raytrace_max_range: 5.0
+        # front_scan:
+        #   topic: /scan_mid70             # ← /scan を購読
+        #   data_type: "LaserScan" # ← LaserScan を指定
+        #   marking: True
+        #   clearing: True
+        #   obstacle_max_range: 2.0
+        #   raytrace_max_range: 5.0
       static_layer:
         plugin: "nav2_costmap_2d::StaticLayer"
         map_subscribe_transient_local: False
@@ -438,12 +437,11 @@ local_costmap:
 global_costmap:
   global_costmap:
     ros__parameters:
-      update_frequency: 7.0 # 3.0
+      update_frequency: 5.0 # 3.0
       publish_frequency: 1.0
       global_frame: map
       robot_base_frame: base_link
-      # robot_radius: 0.3 # 0.22
-      footprint: "[ [0.7, 0.4], [0.7, -0.4], [-0.3, -0.4], [-0.3, 0.4] ]"
+      robot_radius: 0.3 # 0.22
       resolution: 0.05
       track_unknown_space: true
       plugins: ["static_layer", "obstacle_layer", "inflation_layer"]
@@ -493,7 +491,7 @@ global_costmap:
           min_obstacle_height: -inf # 0.1
           marking: True
           clearing: True
-          obstacle_max_range: 10.0 # 4.0
+          obstacle_max_range: 4.0
           raytrace_max_range: 5.0
 
       voxel_layer:
