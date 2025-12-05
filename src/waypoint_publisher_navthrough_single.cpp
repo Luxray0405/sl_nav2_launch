@@ -79,7 +79,12 @@ public:
             10, 
             std::bind(&WaypointPublisher::resume_callback, this, std::placeholders::_1)
         );
-        stop_area_pub_ = this->create_publisher<std_msgs::msg::Bool>("/stop_area_flag", rclcpp::QoS(10).transient_local());
+        stop_area_pub_ = this->create_publisher<std_msgs::msg::Bool>("/stop_area_flag", rclcpp::QoS(10).durability_volatile());
+
+        timer_ = this->create_wall_timer(
+            std::chrono::milliseconds(100), 
+            std::bind(&WaypointPublisher::timer_callback, this)
+        );
 
         // 全waypointを読み込んでメンバー変数に保存
         RCLCPP_INFO(this->get_logger(), "Loading all waypoints...");
@@ -213,6 +218,7 @@ private:
     rclcpp::Publisher<std_msgs::msg::Empty>::SharedPtr start_motion_publisher_;
     rclcpp::Subscription<std_msgs::msg::Empty>::SharedPtr resume_subscription_;
     rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr stop_area_pub_;
+    rclcpp::TimerBase::SharedPtr timer_;
 
     // waypointと状態管理
     std::vector<geometry_msgs::msg::PoseStamped> all_waypoints_; // 全waypoint
@@ -232,6 +238,13 @@ private:
     
     std::mutex goal_handle_mutex_;
     GoalHandleNavigateThroughPoses::SharedPtr active_goal_handle_ = nullptr;
+    
+    void timer_callback()
+    {
+        auto msg = std_msgs::msg::Bool();
+        msg.data = current_stop_state_; // 現在のフラグ状態を入れる
+        stop_area_pub_->publish(msg);
+    }
 
     // stop_area_flag をチェックし、変化があれば発行する
     void checkAndPublishStopState(int current_index)
